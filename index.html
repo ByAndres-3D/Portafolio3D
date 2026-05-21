@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mauro Martínez — 3D Renderer & Designer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0c0c0b; --surface:#131312; --border:#2a2a28; --gold:#c9a84c; --gold-light:#e8c97a; --cream:#f0ead8; --muted:#7a7a70; --text:#e8e4d8; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-weight:300;font-size:13px;line-height:1.7;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1000;opacity:.5}
+
+  nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:1.5rem 3rem;border-bottom:1px solid transparent;transition:border-color .3s,background .3s}
+  nav.scrolled{border-color:var(--border);background:rgba(12,12,11,.94);backdrop-filter:blur(12px)}
+  .nav-logo{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;color:var(--gold);letter-spacing:.1em;text-decoration:none}
+  .nav-links{display:flex;gap:2.5rem;list-style:none}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:11px;letter-spacing:.12em;text-transform:uppercase;transition:color .2s}
+  .nav-links a:hover{color:var(--gold)}
+
+  .hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;position:relative;overflow:hidden}
+  .hero-left{display:flex;flex-direction:column;justify-content:center;padding:8rem 3rem 4rem;position:relative;z-index:2}
+  .hero-tag{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:2rem;display:flex;align-items:center;gap:1rem}
+  .hero-tag::before{content:'';display:block;width:2.5rem;height:1px;background:var(--gold)}
+  h1{font-family:'Cormorant Garamond',serif;font-size:clamp(3.5rem,6vw,6.5rem);font-weight:300;line-height:1;color:var(--cream);margin-bottom:1rem}
+  h1 em{font-style:italic;color:var(--gold)}
+  .hero-subtitle{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:2.5rem}
+  .hero-description{max-width:400px;color:var(--muted);font-size:12.5px;line-height:1.8;margin-bottom:3rem}
+  .hero-ctas{display:flex;gap:1.5rem;align-items:center}
+  .btn-primary{background:var(--gold);color:var(--bg);padding:.85rem 2rem;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;transition:background .2s,transform .2s}
+  .btn-primary:hover{background:var(--gold-light);transform:translateY(-2px)}
+  .btn-secondary{color:var(--muted);text-decoration:none;font-size:11px;letter-spacing:.1em;border-bottom:1px solid var(--border);padding-bottom:2px;transition:color .2s,border-color .2s}
+  .btn-secondary:hover{color:var(--gold);border-color:var(--gold)}
+  .hero-right{position:relative;overflow:hidden}
+  .hero-right::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#1a1508 0%,#0c0c0b 40%,#1a1205 100%)}
+  .hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;opacity:.4}
+  .hero-shape{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:280px;height:280px;border:1px solid var(--gold);opacity:.15;animation:rotate 20s linear infinite}
+  .hero-shape::after{content:'';position:absolute;inset:30px;border:1px solid var(--gold);opacity:.6;animation:rotate 12s linear infinite reverse}
+  .hero-initials{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Cormorant Garamond',serif;font-size:10rem;font-weight:300;color:transparent;-webkit-text-stroke:1px rgba(201,168,76,.15);letter-spacing:-.05em;white-space:nowrap}
+  .hero-stats{position:absolute;bottom:3rem;right:3rem;display:flex;flex-direction:column;gap:1.5rem;text-align:right}
+  .stat-num{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:300;color:var(--gold);line-height:1}
+  .stat-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+  @keyframes rotate{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+  section{padding:6rem 3rem}
+  .section-label{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);margin-bottom:3rem;display:flex;align-items:center;gap:1.5rem}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+  h2{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3.5rem);font-weight:300;color:var(--cream);line-height:1.1}
+
+  .about{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .about-grid{display:grid;grid-template-columns:1fr 1.5fr;gap:5rem;align-items:start;max-width:1100px;margin:0 auto}
+  .about-left h2{margin-bottom:1.5rem}
+  .about-text{color:var(--muted);line-height:1.9;font-size:12.5px}
+  .about-text p+p{margin-top:1rem}
+  .about-detail{display:flex;justify-content:space-between;align-items:baseline;padding:1rem 0;border-bottom:1px solid var(--border);font-size:12px}
+  .about-detail-label{color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+  .about-detail-value{color:var(--cream)}
+
+  /* PORTFOLIO */
+  .portfolio-section{max-width:1200px;margin:0 auto}
+  .project-tabs{display:flex;gap:0;margin-bottom:3rem;border:1px solid var(--border);width:fit-content;flex-wrap:wrap}
+  .project-tab{padding:.65rem 1.5rem;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);cursor:pointer;border:none;background:transparent;font-family:'DM Mono',monospace;transition:all .2s;border-right:1px solid var(--border)}
+  .project-tab:last-child{border-right:none}
+  .project-tab.active{background:var(--gold);color:var(--bg)}
+  .project-tab:not(.active):hover{color:var(--gold);background:rgba(201,168,76,.05)}
+  .project-panel{display:none}
+  .project-panel.active{display:block}
+  .project-header{margin-bottom:2rem}
+  .project-title{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--cream);margin-bottom:.5rem}
+  .project-meta{font-size:11px;color:var(--muted);letter-spacing:.1em}
+
+  .gallery-masonry{columns:3;column-gap:8px}
+  .gallery-item{break-inside:avoid;margin-bottom:8px;overflow:hidden;cursor:pointer;position:relative;background:var(--surface)}
+  .gallery-item img{width:100%;display:block;transition:transform .5s ease,filter .3s ease;filter:brightness(.92)}
+  .gallery-item:hover img{transform:scale(1.04);filter:brightness(1)}
+  .gallery-item-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(12,12,11,.7) 0%,transparent 50%);opacity:0;transition:opacity .3s;display:flex;align-items:flex-end;padding:1rem}
+  .gallery-item:hover .gallery-item-overlay{opacity:1}
+  .gallery-item-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold)}
+
+  .lightbox{position:fixed;inset:0;z-index:500;background:rgba(8,8,7,.97);display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+  .lightbox.open{display:flex}
+  .lightbox-inner{position:relative;max-width:90vw;max-height:90vh}
+  .lightbox-img{max-width:90vw;max-height:85vh;object-fit:contain;display:block}
+  .lightbox-close{position:absolute;top:-2.5rem;right:0;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:.1em;transition:color .2s}
+  .lightbox-close:hover{color:var(--gold)}
+  .lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);color:var(--gold);font-size:1.2rem;padding:.8rem 1rem;cursor:pointer;transition:background .2s}
+  .lightbox-nav:hover{background:rgba(201,168,76,.3)}
+  .lightbox-prev{left:-4rem}
+  .lightbox-next{right:-4rem}
+  .lightbox-counter{position:absolute;bottom:-2rem;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.15em;color:var(--muted)}
+
+  .skills-section{max-width:1100px;margin:0 auto}
+  .skills-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);margin-top:3rem;border:1px solid var(--border)}
+  .skill-card{background:var(--bg);padding:2rem;transition:background .2s}
+  .skill-card:hover{background:var(--surface)}
+  .skill-category{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+  .skill-list{list-style:none}
+  .skill-list li{color:var(--muted);font-size:12px;padding:.3rem 0;border-bottom:1px solid rgba(42,42,40,.5);transition:color .2s}
+  .skill-list li:hover{color:var(--cream)}
+  .skill-list li:last-child{border-bottom:none}
+
+  .experience{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .exp-container{max-width:1100px;margin:0 auto}
+  .exp-list{margin-top:3rem}
+  .exp-item{display:grid;grid-template-columns:200px 1fr;gap:3rem;padding:2.5rem 0;border-bottom:1px solid var(--border);position:relative}
+  .exp-item::before{content:'';position:absolute;left:200px;top:0;bottom:0;width:1px;background:var(--border)}
+  .exp-meta{padding-top:.2rem}
+  .exp-year{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold);line-height:1}
+  .exp-company{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:.4rem}
+  .exp-content{padding-left:2rem}
+  .exp-role{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:400;color:var(--cream);margin-bottom:.75rem}
+  .exp-desc{color:var(--muted);font-size:12px;line-height:1.8}
+  .exp-tags{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+  .tag{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(201,168,76,.3);padding:.25rem .6rem}
+
+  .contact-section{background:var(--bg);text-align:center;padding:8rem 3rem}
+  .contact-inner{max-width:600px;margin:0 auto}
+  .contact-section .section-label{justify-content:center}
+  .contact-section .section-label::after{display:none}
+  .contact-section h2{margin-bottom:1.5rem}
+  .contact-section p{color:var(--muted);margin-bottom:3rem;font-size:12.5px;line-height:1.8}
+  .contact-links{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap}
+  .contact-link{display:flex;flex-direction:column;align-items:center;gap:.5rem;text-decoration:none;color:var(--muted);padding:1.5rem 2rem;border:1px solid var(--border);min-width:160px;transition:all .2s}
+  .contact-link:hover{color:var(--gold);border-color:rgba(201,168,76,.4);background:var(--surface)}
+  .contact-link-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+  .contact-link-value{font-size:11.5px;text-align:center}
+
+  footer{padding:2rem 3rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:10px;letter-spacing:.1em}
+
+  .fade-in{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+  .fade-in.visible{opacity:1;transform:none}
+
+  @media(max-width:900px){
+    nav{padding:1.2rem 1.5rem}
+    .nav-links{display:none}
+    .hero{grid-template-columns:1fr}
+    .hero-right{display:none}
+    .hero-left{padding:7rem 1.5rem 3rem}
+    section{padding:4rem 1.5rem}
+    .about-grid,.exp-item{grid-template-columns:1fr;gap:2rem}
+    .exp-item::before{display:none}
+    .exp-content{padding-left:0}
+    .skills-grid{grid-template-columns:1fr}
+    .gallery-masonry{columns:2}
+    .lightbox-prev{left:-2.5rem}
+    .lightbox-next{right:-2.5rem}
+    footer{flex-direction:column;gap:.5rem;text-align:center}
+  }
+  @media(max-width:500px){.gallery-masonry{columns:1}}
+</style>
+</head>
+<body>
+
+<nav id="navbar">
+  <a class="nav-logo" href="#">MM</a>
+  <ul class="nav-links">
+    <li><a href="#about">Perfil</a></li>
+    <li><a href="#portfolio">Proyectos</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#experience">Experiencia</a></li>
+    <li><a href="#contact">Contacto</a></li>
+  </ul>
+</nav>
+
+<section class="hero" id="home">
+  <div class="hero-left">
+    <div class="hero-tag">Disponible para proyectos · Colombia</div>
+    <h1>Mauro<br><em>Martínez</em></h1>
+    <p class="hero-subtitle">3D Renderer &amp; Architectural Designer</p>
+    <p class="hero-description">Especialista en visualización arquitectónica, diseño de stands y eventos, e interiores. Más de una década transformando espacios en experiencias visuales memorables.</p>
+    <div class="hero-ctas">
+      <a href="#portfolio" class="btn-primary">Ver proyectos</a>
+      <a href="#contact" class="btn-secondary">Contactar</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-grid"></div>
+    <div class="hero-shape"></div>
+    <div class="hero-initials">MM</div>
+    <div class="hero-stats">
+      <div><div class="stat-num">10+</div><div class="stat-label">Años de<br>experiencia</div></div>
+      <div><div class="stat-num">30+</div><div class="stat-label">Proyectos<br>realizados</div></div>
+      <div><div class="stat-num">6</div><div class="stat-label">Firmas &amp;<br>empresas</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="about" id="about">
+  <div class="about-grid fade-in">
+    <div class="about-left">
+      <div class="section-label">Perfil</div>
+      <h2>Diseño que<br><em style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold)">comunica</em></h2>
+    </div>
+    <div class="about-right">
+      <div class="about-text">
+        <p>Soy un 3D Renderer y Diseñador con experiencia avanzada en visualización arquitectónica, stands y eventos corporativos. Trabajo con herramientas de última generación para entregar renders fotorrealistas que venden antes de que el proyecto se construya.</p>
+        <p>He diseñado espacios para marcas como Nespresso, Visa, Maersk, G-Shock, Varela Hermanos y más de 25 clientes a través de RQ Marketing Panama.</p>
+      </div>
+      <br>
+      <div class="about-detail"><span class="about-detail-label">Ubicación</span><span class="about-detail-value">Colombia</span></div>
+      <div class="about-detail"><span class="about-detail-label">Especialidad</span><span class="about-detail-value">Renders · Stands · Eventos</span></div>
+      <div class="about-detail"><span class="about-detail-label">Formación</span><span class="about-detail-value">Arquitectura — U. de Panamá</span></div>
+      <div class="about-detail"><span class="about-detail-label">Email</span><span class="about-detail-value">mauro.andres072@gmail.com</span></div>
+      <div class="about-detail"><span class="about-detail-label">WhatsApp</span><span class="about-detail-value">+507 6205 5128</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="portfolio">
+  <div class="portfolio-section fade-in">
+    <div class="section-label">Portafolio</div>
+    <h2 style="margin-bottom:2rem;">Proyectos seleccionados</h2>
+    <div class="project-tabs" id="project-tabs"></div>
+    <div id="project-panels"></div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="skills-section fade-in">
+    <div class="section-label">Herramientas &amp; Habilidades</div>
+    <h2>Stack técnico</h2>
+    <div class="skills-grid">
+      <div class="skill-card"><div class="skill-category">Modelado 3D</div><ul class="skill-list"><li>SketchUp</li><li>Revit</li><li>AutoCAD</li><li>pCon.planner</li></ul></div>
+      <div class="skill-card"><div class="skill-category">Render &amp; Visualización</div><ul class="skill-list"><li>Lumion</li><li>D5 Render</li><li>V-Ray</li><li>Unreal Engine 5</li></ul></div>
+      <div class="skill-card"><div class="skill-category">Diseño Gráfico</div><ul class="skill-list"><li>Adobe Photoshop</li><li>Adobe Illustrator</li></ul></div>
+      <div class="skill-card"><div class="skill-category">Especialidades</div><ul class="skill-list"><li>Visualización Arquitectónica</li><li>Diseño de Interiores</li><li>Stands &amp; Eventos</li><li>Planos Técnicos</li></ul></div>
+      <div class="skill-card"><div class="skill-category">Diseño Técnico</div><ul class="skill-list"><li>Diseño de Mobiliario</li><li>Supervisión de Obra</li><li>Planos de Fabricación</li></ul></div>
+      <div class="skill-card"><div class="skill-category">Gestión</div><ul class="skill-list"><li>Coordinación con proveedores</li><li>Presentaciones ejecutivas</li><li>Cliente-facing design</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="experience" id="experience">
+  <div class="exp-container fade-in">
+    <div class="section-label">Trayectoria</div>
+    <h2>Experiencia profesional</h2>
+    <div class="exp-list">
+      <div class="exp-item">
+        <div class="exp-meta"><div class="exp-year">2024–2025</div><div class="exp-company">RQ Marketing Panama</div></div>
+        <div class="exp-content">
+          <div class="exp-role">3D Renderer / Diseñador — Stands &amp; Eventos</div>
+          <p class="exp-desc">Diseño integral de más de 29 stands y espacios para eventos desde cero: concepto, layout, circulación, mobiliario. Renders fotorrealistas para ventas y aprobación. Clientes: Nespresso, Visa, Maersk, G-Shock, Varela Hermanos, Trojan, Cotton Candy, DIPSA y más.</p>
+          <div class="exp-tags"><span class="tag">D5 Render</span><span class="tag">Stands</span><span class="tag">Eventos</span><span class="tag">Planos</span></div>
+        </div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-meta"><div class="exp-year">Anterior</div><div class="exp-company">Decoin PTY</div></div>
+        <div class="exp-content">
+          <div class="exp-role">Diseñador / Renderista / Planimetría</div>
+          <p class="exp-desc">Diseño especializado de mobiliario a medida, planos técnicos para fabricación y renders fotorrealistas para presentación de propuestas.</p>
+          <div class="exp-tags"><span class="tag">Mobiliario</span><span class="tag">Planos</span><span class="tag">Renders</span></div>
+        </div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-meta"><div class="exp-year">Anterior</div><div class="exp-company">Imara Arquitectos · Grow Custom · Coronado · Itesa</div></div>
+        <div class="exp-content">
+          <div class="exp-role">Diseñador de Interiores · Renderista · Supervisor</div>
+          <p class="exp-desc">Diseño de interiores, renders de propuestas, supervisión de obra y planos técnicos eléctricos y de detalle para proyectos residenciales y comerciales en Panamá.</p>
+          <div class="exp-tags"><span class="tag">Interiores</span><span class="tag">Supervisión</span><span class="tag">AutoCAD</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="contact-section" id="contact">
+  <div class="contact-inner fade-in">
+    <div class="section-label">Contacto</div>
+    <h2>Trabajemos<br><em style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold)">juntos</em></h2>
+    <p>¿Tienes un proyecto de stands, eventos, interiores o visualización arquitectónica? Disponible para colaboraciones freelance y proyectos de largo plazo desde Colombia.</p>
+    <div class="contact-links">
+      <a href="mailto:mauro.andres072@gmail.com" class="contact-link">
+        <span class="contact-link-label">Email</span>
+        <span class="contact-link-value">mauro.andres072@gmail.com</span>
+      </a>
+      <a href="https://wa.me/50762055128" target="_blank" class="contact-link">
+        <span class="contact-link-label">WhatsApp</span>
+        <span class="contact-link-value">+507 6205 5128</span>
+      </a>
+      <a href="tel:+573157006357" class="contact-link">
+        <span class="contact-link-label">Teléfono Colombia</span>
+        <span class="contact-link-value">+57 315 700 6357</span>
+      </a>
+      <a href="https://www.linkedin.com/in/mauro-martinez072" target="_blank" class="contact-link">
+        <span class="contact-link-label">LinkedIn</span>
+        <span class="contact-link-value">mauro-martinez072</span>
+      </a>
+      <a href="https://github.com/ByAndres-3D" target="_blank" class="contact-link">
+        <span class="contact-link-label">GitHub</span>
+        <span class="contact-link-value">ByAndres-3D</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>© 2025 Mauro Martínez — 3D Renderer &amp; Designer</span>
+  <span>Colombia · Disponible para proyectos</span>
+</footer>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" onclick="closeLightboxBtn()">[ cerrar ]</button>
+    <button class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1)">&#8592;</button>
+    <img class="lightbox-img" id="lightbox-img" src="" alt="">
+    <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1)">&#8594;</button>
+    <div class="lightbox-counter" id="lightbox-counter"></div>
+  </div>
+</div>
+
+<script>
+function gdUrl(id){ return `https://lh3.googleusercontent.com/d/${id}`; }
+
+// ── PROYECTOS ─────────────────────────────────────────────────────────────────
+const PROJECTS = [
+  {
+    id: 'salon',
+    name: 'Salón de la Fama',
+    meta: 'Pandeportes · Evento a gran escala · Stand & Diseño de Espacios',
+    images: [
+      '1635YJVP_p1o6GzQBw6CEtSHOZ2ChOhsv','1f4xIvC8v2hOZYJuGdB5H9AjKuM0THFDu',
+      '1Zzw3_EwrD-mTQkOfk_YdDwP_3o8q15Oh','1T05y8txqismWe7sPlnuYwL6QJnKaHUXC',
+      '1_8-ondiRHHxYNrbpUYA9VOrcQ2um5ssB','1lYAHzomQ_ovtMA4Q9evmCT9RcBGtWJz2',
+      '1YB1w_tEUH7dh8tbsGAq52FWZ0JrABGYh','1Pac-y5yPVWKiRjO3HZC_uMIxKN1D9Ouu',
+      '1p5YTy-yj8GMXNVmZJ-iO35ORqMPWb-0t','1th3PZDzuCWfzf2vpNJgW3JYgfOlg-qjF',
+      '1RmDBpoEcqCbfXPJ5m2364LhKw-HM205s','1sS3c8Q0EUMdiHpkrpKBO5JOw3AEdqPwZ',
+      '1bgupKV5UZfVra9zRyCzMYOhNwz_1nT_L','155LYbMrhLnzq7VnbKYfHx5281mmzVxMw',
+      '1NF1tLvWCORsZAV-VWhBL-h_3W6GLbcth','13ZEepa4kHATCuYA8PxpWf-NxNb_4-2xw',
+      '1m8oJAM6qZWpwWC1sr1V61TK1cfXp5JFw','1SntOJAW47yBys30smIfDyzI775ljgE38',
+      '1GeY6omu23tjbAkcxyAiLQLTp1JrABV8h','18xGhm7mm9kswHpwXtXRLnyuzKmWNFUBf',
+      '1LL-ZQsdrK0QGCva7aFSeX1707ELSEvr5','1ZzHv5kEbR4ivmLqC4D3tRvS0j0cJKmtX',
+      '1ba783TkX22ShcS1DpYjMs5KwkGOK5lGk','1cBCB5VA7Lz1iqggdAGspqVBEIKbC6tQU',
+      '16tHP9_UG8H9jiXY-UdBcg7x1LLg_obvV','1lz659zPKDjKN-RGO40mna1FhFz0v1MFA',
+      '1kRpBD2o2WRm_4q9sHrjVZtZ_xAiDnsLH','1U4vft-2gfm6NBauGUWRR-HmRNRtFpykx',
+      '1w6OvI9cImAy6qXbvWkw9KUvA5Oz0eoa7','1z3PIJpXF3TyY0JT22wT-mYAraFAn04gU',
+      '1mfbeR5E_5PoSXsvqmHjnNTLP2sRA4VPR','1EBKVRvPZA6lHZIypEWc3ymx3aKgWPcje',
+      '1ZLu1qH4agdeu7AsajPenGOyXqWHJ6-JX','15SvxDSzkFE-HyZz3FbvowEvGIIqmB0B7',
+      '1h6ZhmaFefe7QHoL6nQ4PQE0GodAMM3ja','1MtRE-h9iJjf7uo82tCddh3pkT7BvP71d',
+      '16_BYelKmPsIt7civz8EWif5rlG6-A3TP','1Qd78jDlxOlNQtC2K2VpjjxLWSzjTnNaT',
+      '1XoPcg-fKAwz-osTZI5kerCPXa3wKfjQH','1IarHTz_1X1rJDSZkHgvw5R4fF7gr2eV3',
+      '1emdCKhGcJRnxZmTChWEAq_Kr7sAzQwpo',
+    ]
+  },
+  {
+    id: 'trojan',
+    name: 'Trojan',
+    meta: 'Stand corporativo · RQ Marketing Panama',
+    images: [
+      '10mnK14THzSCPPxEEueFzdR32si4JqTOo','12N6lLyOUcDX1Vfw7C5Hg5lrQYfm_WJ02',
+      '19TXf2zNNw1F-uyifntF2UeoulWJ8GpOQ','13foKvMriqYuDmiNE_ikG3UZ8Ijk5EoGb',
+      '1pxevjCKUev-gREsxc75u2lgVM4mojEkE','1yElPCwI0DaCBZwu1Y0_H9WdgdSQoj03d',
+      '1QxN92ovlPQwk2ce1sJ_2__GvWxlzCit_','1NxIYUHRHgEl0FjDZ1jymMXOP_lPQbSCF',
+      '1CvVTCRSdVOG74HQ19u1-lXUztXCaVAQu','1FWeKrTSnS11iSHR85VbEii0lqSjmicKv',
+      '1yiRXJaj567VhbOWbZC3_OlJsZ2hDVrEx','1r2wrSrZZqFx4XwjJfR8bYl6ttFMfnUei',
+      '1KR6mJYEQtQsTGjKHsE91Nay6RqezEmLN','1rE6fLFKPjtqoiC3ZwJwN96vImGAflt7L',
+      '1FUcAnQTWEmI2GdXA97Xt6AL7gYLRzVHO','1ziEptQbn3hssCbV2VrkTEsVYOxzyPY_E',
+      '1xybQijYFf0GgQAa7gIqBG4wny9CUAbng',
+    ]
+  },
+  {
+    id: 'zonaLibre',
+    name: 'Zona Libre de Colón',
+    meta: 'Diseño de espacio ferial · RQ Marketing Panama',
+    images: [
+      '1zttAy_bl_eYa3Vs4Jvbjd4AdDGHMAXER','1nLCr-GJVBcyVg7Bs7zjvI_V_HKdYQJ8f',
+      '1jyski09Gh5DUxzHWfugP1NLlcGt3Eo9-','1SAEVlIkPcwsPDyv5eDmWaP_NYCDRpon4',
+      '1enjrFSIyJbK3B7MtxUh-EVuodwdDgiqx','1bd9o2EOGyCX7vy_25wDkVtJSAT3Bp2Gm',
+      '14yKJmcDQOfvHstc5iItI8LdClydkHSwv','1YUc6Oqf8Wc8XtdE5PC1cVYsqsMBD0sX0',
+      '1uiidtLMXiMy80br5P0OynYpZaPdeTbRa','1DK0dsWKz60LqaN8vWcAEHX22dBjUR_DP',
+      '1JJ8jObMPSJ2eaI0J7BLoV0EnatEFox9P','1_pjlJgw1VqDxOJBvidksi8ydrTU-7k86',
+      '1_dn3gb4DFsonJgOjzKMCblWCAdjD3HL-','1Y5KSheYBgQItWXsXetO6LWiKFut2Xe2K',
+      '1N7Ld-eCOQlbdpO7kQrrynMGeca0nakAz','1LkCcyve12js-PNgWH86BKiDhx7GREczw',
+      '1fWw85t9XbpVzuVsveVi3Re2OR90iueYq','1gcGVON1J6JRGZBF33ywODDRW5LTFlX2Q',
+      '1YnUYCdjnhbjwncTXP3FwiFs6pBi_4agc','1AMtej_IYtgYpznIpJmjG93UiBfBDi9kl',
+    ]
+  },
+  {
+    id: 'varelahermanos',
+    name: 'Varela Hermanos',
+    meta: 'Stand feria · RQ Marketing Panama',
+    images: [
+      '1XjhmnOSBD9oDGTOicaAJ505tDqky2aEy','1hnCGXU0LdOnNwWhzv53lhcRpjW6WNPcS',
+      '15l-MtaPXQvjPtasen3dfX-mLWn_M43SH','1L6XILYrVN325xwldJRZJEm7eWYVU9kZw',
+      '1U6VcZ-8VuHxZ5b4wDmRFIqiODDv311Gc','1E6rrm1bCp-85P1_gP0Az-Dl29of36jpn',
+      '1ZD97-kvEn1-ZEbQ7p7Pc_EGqjh-YTZP7',
+    ]
+  },
+  {
+    id: 'visa',
+    name: 'Visa',
+    meta: 'Stand corporativo · RQ Marketing Panama',
+    images: [
+      '107VwFIK-gIXAe7Gvay_v-98vxDau8vJP','1_B7VLaMMIb56VKPUJw1-78HM9VQBdskK',
+      '1NaUwvJy5-3sfRx4ywd5x_uZVZo6wuIJM','1_MTNqP5oEUvcoKX6dgdyJ7xcgq0b8MUV',
+      '1LH0iETA8WuYIrOoR7pM0dOQkt4YY0VeK','1H1JZ3KmzQnmDCVGcJmA-70mI06_hHGj8',
+      '16dSsUJD0dTHyiaGWKnwvdUjnHZNgCYDN','1CruB_6Dg4HNSPXwt5A9U3iB-EBYFb2Bf',
+      '1r2GlF6F9QbcFcRBnDckSBC-PGq64RGBl','1bPEp6l0U7g-2gPezlKoVmrlRAzzjIpJC',
+      '1i55CdQFgHIjEs-wv59vw8amAn_4HCu__','1KSuiVbyOOHEprJxPEpzZzJvrlOZeWXxO',
+      '10cfnZrPMEwbFpEWGNr2pqmAFGbddv0fU','15Nyt23SfswkLhP6DYfPnPfNk77E8aN40',
+      '13BbY81RO5Cl4wFxHOKBPpOqrGhf26Hbp','1wc-wC0d-ANf4dqRM5ubk6bWo5OxlDEV-',
+      '13aDchDH4JGBJsjiuvoSqizS0Y0wHKm21','1ipKd9lU9cpsCLOKm4OE7Cp_ZKma4qNf8',
+      '1JXORSdZouUVzDG7wmyzDlRYTlZJT1Tak','1G57S5hgJn1pb4gbWuiE5HolT-IlXtdIp',
+    ]
+  },
+  {
+    id: 'triangle',
+    name: 'Triangle',
+    meta: 'Stand & evento · RQ Marketing Panama',
+    images: [
+      '1KyNBrgUxsqYBaonepan4N8-FfjzTTUyj','1I7-Lu-61fanx-v2T7UShEO1ErTL_7uUi',
+      '1M-gA6oOZW_gi62N8Wohrq3n-Y2BFmtan','1R8QXpOlVkgNo-3nxSgvUpxwcYeh8w5Ap',
+      '1BxwgW7A0QjjOOap9EQdcqMbV1BiK8q3M','1Dngjz17YWIXmLRBH3F0RN1UFR_mTHuqE',
+      '1ZiLl6Dp7kD7lgFTGaxxQcCCUy94M3qJc','1SXYR12LmUz30t91y9Sfqp83gucG3uTOm',
+      '1uMK7uS8jsVZ7y3vWu5MqD_EETEMEBJ-Z','1C81I6Wu8K3E-KS4G7jCcOW47OlMDU65k',
+      '1u8xDjVB5XkCswp8LRA5xNKgbVEf_I0Is','1YTLZsdnCJnFcnaUWO_8ZqrvFLGoMnhty',
+      '1XSgWAqjnsA3HzqxlAKOWuANTvMimStJI','1lA8MKnV9dTy11y4op3s6NIBjwzN9RiNx',
+      '1l6cWeIOOOOvv7n3jQl2RdnWgDw7CAJTX',
+    ]
+  },
+  {
+    id: 'toolmate',
+    name: 'Toolmate',
+    meta: 'Stand expositivo · RQ Marketing Panama',
+    images: [
+      '1TDdUgXtzmyqpvaQ3Fc6UAdD_9AxHTwLP','1FwNyH4jQY_1C3hDzd6QcvQ5Ec9DUOnaS',
+      '1AWEdjAJll-AvmkhIuHy43sqf1rGc1pZ_','19sxAQZ5ULNZfxPjEaC9s8uSTxgKWiDYl',
+      '1_aKTg1OkssdTMxU7QedXHy1Im-S4L3VT','1I3rMdM_Go8JZTHJoKMApk5pmk3WMftjs',
+      '1LuoDjzDoe3dn6FOtmUgWGXFlL8OeJIKn','1aKdWzKH2uCZ0q61bA8MiN9vHGXoebApD',
+      '1JUih1nYjJ9AvuD4RHH55B__vZIx62ZC2','1CGQk5pOdpZB_gcO32cKQ7yscvKnwvzTA',
+    ]
+  },
+  {
+    id: 'speedmax',
+    name: 'Speed Max',
+    meta: 'Stand corporativo · RQ Marketing Panama',
+    images: [
+      '1v6oWlm_9cxtaLPDh-TVtoIhLy57sZGpo','11pP6iw2Ew7sup6QJGPE1vP7y_WcLAT9g',
+      '1pIJUvmqGS2LriYOXg7a7PGgNewdrz-qi','1wj7HvGD_yQ8C7388ZTymKMy_lkBeDrXp',
+      '1X3JHIFwDpV0kEZmT5FqsFKlsdxi3H0p9','1quKhMc805gYontr5oznoc0TYFzzQgccE',
+      '1HANUxfoX4rWKIQdZGMwMgAHOplrbBV7_','1ArNqyz42j2-LtRZTKKij5n3VXA4uP3AC',
+      '1nCP_IZRgTy-0yW6eV3cVDVsECzdrInHf','1RejAKpvHQXs2EljZcWOmkas7-Q8Wfp72',
+    ]
+  },
+  {
+    id: 'sash',
+    name: 'Sash Lubricantes',
+    meta: 'Stand industrial · RQ Marketing Panama',
+    images: [
+      '1P1xfLL1h8Rvn7z2MlYRuDmiC0JXxQS1I','15ifnzh9OzDtpgpbBI2AxfGRhfsP0q1we',
+      '1YWcILxj_ISLymZkzXabDW1_9YXXf-Tnk','1GieYPgwIJ0T_ODV3yMcFF3-2fxOI_89Y',
+      '1KdUBZ4nHkXTmssJd0m2_LHASryUxU7As','1B3A1ypSLj5aZN_xlguJQrmbaiJz6CHXo',
+      '1Ld7ED8yagfK4tHtV-cawSz83lew322l7','16ribNk5LhNBJGUfe_t4wZX58L90wsFMx',
+      '1NZdkEwafIDmTw8YGL_R3frFCVITZhTmV','1RauHG4-4mwqplCAc-ow-uy8wHYRzyqie',
+    ]
+  },
+  {
+    id: 'presidencia',
+    name: 'Presidencia Tarima',
+    meta: 'Diseño de tarima · RQ Marketing Panama',
+    images: [
+      '1qN3rTqtV4tl8N52nqNo57b9f4O5iu96o','1yRGnSTPwKyGnRKt1WZon4zmt5U3hezKP',
+      '1HcrUEY0piSPzI8j5KAG587oEzYx4YVnv','1Bpq6TIbP3XqABvac2zfDkEy0wZ3BIMB-',
+      '1_ayk9eOjek3v1EvVVdPAha1Gzyq1sAqB','1_gSDxfRxPy0K0JxJLgXA886qhDLbOvy_',
+      '1SfrVO8OSEN60IsXSl5crB4MGOwZT0DsS','1BIcQ9BWTbZ5ZogrXVKtRCUPigrmUTEAi',
+      '1XQ5owe2OB0lw2CZxluwMAjUDLZHo0myE','10EWymQ_uY34tqKFLl52lYHAYq_koTN__',
+    ]
+  },
+  {
+    id: 'nespresso',
+    name: 'Nespresso',
+    meta: 'Stand premium · RQ Marketing Panama',
+    images: [
+      '1qFP447ZcWBV3mXtSWAO_SjwWryL0665o','1sbvWeQoGSV0efH8pGGQgwwPdCGG5TIkU',
+      '1wmsC3VecfjwZaDT_qO513YSJkqI3Yoi3','1A5H6cIjZUnAdX8TZYdopVyfrrKoJgF38',
+      '1qOXJePdPJR5urCGKnz2lSod3PVCRFop-','1FOVZAL9arVoge-r-SV0x4uSsFwYFhv1t',
+      '1eLPIHDyI8wwp4Y08DcRiGAOJw1Xjsj1j','1CrM_T1fRO9jeN2crXMVyLiF7WKmAbMot',
+      '1le8y3AW2goUCBFzJpFzu40IzSYqqBCj9','18u5HCpYGXe3vGOjRZqpD62uoVEl4kRK6',
+      '1DaK1vcqNx14fICT6S3LJwlhUNc1E2Zb_','1g4nIW6OC9Kz-gt_7POSabq0AcH60njkS',
+      '14BVFSepXKoB3yJTaPrvGSAIUGbuxqsny','1BZ_EwJcu08e4osKfWIsxOXh-wpOzldB8',
+      '1gplgGATChuEnPKlzApFExmBskmiG56RK','1F4GW_s2OTmlPRnqy2W7OvD9USVRyb_3t',
+    ]
+  },
+  {
+    id: 'ralson',
+    name: 'Ralson',
+    meta: 'Stand · RQ Marketing Panama',
+    images: [
+      '1MxUE8_yhRNUaUtQoeya4SYInzcfzH0B6','1P1_7-fHTud3A3DjAP_TEO6SnRYcDWRYN',
+      '1E8hHGY9zKvRQyV-CGU5HQyMK-IFkh7mE','1h0KKsqus49x848qbGCh6Igy84Hv-8M1-',
+      '1P88YAh6Ya-SDYbwV2gpnBkCgvTstOvF-','1XyCdupqlz5JNA7KVDVgeWEy4_2wwj0Ev',
+      '1l0C35dTwvlW0Rcd1wEn6eUmkvu1ioJF_','1EaL9BJ2cv_jIBUipMuaasUtUl00_0xsE',
+      '1ruGUh91EKTUUCIZbB2eCvkThkWjY6SdQ','1iWMBcIOSNNCACARoq7rH_kP_9aq3eaP3',
+    ]
+  },
+  {
+    id: 'aargee',
+    name: 'Aar Gee',
+    meta: 'Stand · RQ Marketing Panama',
+    images: [
+      '1yqlfHZsEr_aRw2lMgCmT5wopoEW08Zi2','1rGCEpXliIrhMZqr0nC2OhOjv_Bya0WlH',
+      '1I6_W4Mt90tgnPSOoNvYNnMqMES2BKIT7','11CEkvMgfITjtY6Fv_-p2JBbXsg62lAID',
+      '1VYjGEZY4_X5dZCly5s62J1J1B0WC9y8K','1_Z8x-SuWsYP0gQAGQq4O0YBG1ZAsUFeS',
+      '12o507x1TF58yGDWz5Rg9y996jWlOTYvC','1X3eToBv794r6xRmw2Rvucz0iNyd1RVAQ',
+      '1U48_dSEaebaBMUlka2rrMp5D6yq5oibf','1xN7OKGsR4WtaRwqhNsT8OpKET1rrp5Lx',
+      '1NatiaaZVjf-I4preQ3CHWo8frHxr5uYn','1QQqVoHI1hMeiDX4TCHwu7mhBaGt3owbW',
+      '1VjuJiF7D_QjSQleZZE-9wQ1jhQOZcTU4','1zioQIJFgVmht32uG8QtC_5MmtEk28nKS',
+      '1BNjEGlMG0hvOC5n53s1WJsPlOxMTuwBp','1Oee8nNKUmQDO93ERD-Wp9wSx8fHSOzhC',
+      '1wG75OczTEw4ZmrF45fyiba2DljeVFcBw','1N1rJbldqSJg7h-8JoEe1R8HOiAyJHRhe',
+      '1ToBWVzckNEUgcRawB2_gCPJ2xXQlh0vG','1XwC05bPfIOJmD4Lu45bdgN-RSrvel91r',
+    ]
+  },
+  {
+    id: 'miprimerempleo',
+    name: 'Mi Primer Empleo',
+    meta: 'MITRADEL · Gobierno de Panamá · Stand evento público',
+    images: []
+  },
+  {
+    id: 'oscar',
+    name: 'Oscar',
+    meta: 'Stand & evento · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'ozka',
+    name: 'Ozka',
+    meta: 'Stand corporativo · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'sailum',
+    name: 'Sailum',
+    meta: 'Stand · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'mobiliario',
+    name: 'Mobiliario',
+    meta: 'Diseño de mobiliario a medida · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'pedersen',
+    name: 'Pedersen Stands',
+    meta: 'Stand expositivo · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'tabasara',
+    name: 'Proovedora Tabasara',
+    meta: 'Stand corporativo · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'maersk',
+    name: 'Maersk',
+    meta: 'Stand corporativo · Logística · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'macstore',
+    name: 'Mac Store',
+    meta: 'Stand retail · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'interview',
+    name: 'Interview',
+    meta: 'Stand · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'idusol',
+    name: 'Idusol',
+    meta: 'Stand industrial · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'gmx',
+    name: 'GMX',
+    meta: 'Stand · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'gshock',
+    name: 'G-Shock',
+    meta: 'Stand retail · Casio · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'exhibicion',
+    name: 'Exhibición',
+    meta: 'Espacio expositivo · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'dipsa',
+    name: 'DIPSA',
+    meta: 'Stand corporativo · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'cmt',
+    name: 'CMT',
+    meta: 'Stand · RQ Marketing Panama',
+    images: []
+  },
+  {
+    id: 'cottoncandy',
+    name: 'Cotton Candy',
+    meta: 'Stand · RQ Marketing Panama',
+    images: []
+  },
+];
+
+// Folder IDs for lazy loading
+const FOLDER_IDS = {
+  visa: '12PtALWSDZMZy3P1rDhYLB8Ug0Nf9wJGO',
+  triangle: '1zzJV5RpBevi7Xclv0yujFozJpk729vsC',
+  toolmate: '1Goz6d9Xijp6GqbaAgcFwRWqwmg7wA3Fq',
+  speedmax: '1Wi0_16HfEMnyvngZc_RaAVt50XPQqUeT',
+  sash: '1p4tttwRMiTyVI35eu69X6vebBSFlwdNq',
+  presidencia: '1OtVaLo4QQ0Ngp0n5QMZvyHh3eF5ZB7t5',
+  nespresso: '1A3IP63Lf7H4B8qp6BeLkXyWFofEnEcJQ',
+  miprimerempleo: '1BXObIskQXCZn_4XEr17W1ycV9qlX6DfN',
+  oscar: '1XL9Uvydk22TuXht64uXdPYTtzoxRqoUt',
+  ozka: '1M2KTrzxZ19GW1N0M22dkKZRzf_LwtV3Q',
+  sailum: '1YkczgmslZOeDevL4z4xyRzgyyyzG4ca0',
+  mobiliario: '13pOVPtZFfga-VqLcb_DEowWXyb4Icfe-',
+  pedersen: '1qzdcKuh10qkGGjTIgk-6xOtjbnsoIGDL',
+  tabasara: '1mYb_YPtoNK0MqwxTEaaC6GJ9pbIh4EkL',
+  ralson: '1XEr8sjRY5EeKYd-8WUxvCOGsBqbxAfvO',
+  maersk: '1Ijv1jjxe5ppBlF4ikdqT3ZYrfOk3c-3j',
+  macstore: '1osy1iJE88aMIIJQqfcFyu6Jp-y1Uf01D',
+  interview: '17TpgngBDiEP71_952zJGT7A5hjYWBNj6',
+  idusol: '1d0biFVii1VycW_-hpKnOWQXfdjaO_K9S',
+  gmx: '1HN5xOxdapDN720wJD56MkqXPbjZY8gSR',
+  gshock: '1FrIVuMF6po1uPUKBV5_rqIysY10mM4Lk',
+  exhibicion: '1UZ19P6SnZxFXnjKluDteHdwwl-K5gPix',
+  dipsa: '1fU6-o3mfjWSHmaoY7Mg1WEWxIV-d9knN',
+  cmt: '1z9Ad8SnkR0VW8HJpxofoU0gWw5iiOoKv',
+  cottoncandy: '1D9G16SiVhlZZIC0B4tFQHJ5pxQtpkJz1',
+};
+
+let currentGallery = [], currentIndex = 0;
+let activeProject = PROJECTS[0].id;
+
+// Build tabs and panels
+function initPortfolio() {
+  const tabsEl = document.getElementById('project-tabs');
+  const panelsEl = document.getElementById('project-panels');
+  PROJECTS.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'project-tab' + (i === 0 ? ' active' : '');
+    btn.textContent = p.name;
+    btn.onclick = () => activateProject(p.id);
+    tabsEl.appendChild(btn);
+
+    const panel = document.createElement('div');
+    panel.className = 'project-panel' + (i === 0 ? ' active' : '');
+    panel.id = 'panel-' + p.id;
+    panel.innerHTML = `
+      <div class="project-header">
+        <div class="project-title">${p.name}</div>
+        <div class="project-meta">${p.meta}</div>
+      </div>
+      <div class="gallery-masonry" id="gallery-${p.id}"></div>
+    `;
+    panelsEl.appendChild(panel);
+  });
+  // Build first project immediately
+  buildGallery(PROJECTS[0]);
+}
+
+function activateProject(id) {
+  if (activeProject === id) return;
+  activeProject = id;
+  document.querySelectorAll('.project-tab').forEach((t, i) => {
+    t.classList.toggle('active', PROJECTS[i].id === id);
+  });
+  document.querySelectorAll('.project-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  const proj = PROJECTS.find(p => p.id === id);
+  buildGallery(proj);
+}
+
+async function buildGallery(proj) {
+  const container = document.getElementById('gallery-' + proj.id);
+  if (!container || container.childElementCount > 0) return;
+
+  let images = proj.images;
+
+  // If no hardcoded images, try to fetch from Drive folder via proxy
+  if (images.length === 0 && FOLDER_IDS[proj.id]) {
+    container.innerHTML = '<p style="color:var(--muted);padding:2rem;font-size:11px;letter-spacing:.1em;">Cargando imágenes...</p>';
+    try {
+      const folderId = FOLDER_IDS[proj.id];
+      // Use Drive thumbnail picker via public folder URL
+      const resp = await fetch(`https://drive.google.com/drive/folders/${folderId}`, { mode: 'no-cors' });
+      // Since no-cors won't give us data, we build a fallback grid with folder embed
+      container.innerHTML = `
+        <div style="grid-column:1/-1;padding:1.5rem;border:1px solid var(--border);text-align:center;">
+          <p style="color:var(--muted);font-size:11px;margin-bottom:1rem;letter-spacing:.08em;">
+            Imágenes disponibles en Google Drive — 
+            <a href="https://drive.google.com/drive/folders/${folderId}" target="_blank" 
+               style="color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(201,168,76,.3)">
+              Ver carpeta completa ↗
+            </a>
+          </p>
+        </div>`;
+    } catch(e) {
+      container.innerHTML = '';
+    }
+    return;
+  }
+
+  images.forEach((id, i) => {
+    const div = document.createElement('div');
+    div.className = 'gallery-item';
+    const img = document.createElement('img');
+    img.src = gdUrl(id);
+    img.alt = proj.name;
+    img.loading = 'lazy';
+    img.onerror = function() {
+      this.src = `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+      this.onerror = () => { this.parentElement.style.display = 'none'; };
+    };
+    const overlay = document.createElement('div');
+    overlay.className = 'gallery-item-overlay';
+    overlay.innerHTML = `<span class="gallery-item-label">${proj.name}</span>`;
+    div.appendChild(img);
+    div.appendChild(overlay);
+    const imgList = images.map(imgId => ({ id: imgId, label: proj.name }));
+    div.addEventListener('click', () => openLightbox(imgList, i));
+    container.appendChild(div);
+  });
+}
+
+function openLightbox(gallery, index) {
+  currentGallery = gallery; currentIndex = index;
+  updateLightbox();
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function updateLightbox() {
+  const item = currentGallery[currentIndex];
+  document.getElementById('lightbox-img').src = gdUrl(item.id);
+  document.getElementById('lightbox-counter').textContent = `${currentIndex + 1} / ${currentGallery.length}`;
+}
+function lightboxNav(dir) {
+  currentIndex = (currentIndex + dir + currentGallery.length) % currentGallery.length;
+  updateLightbox();
+}
+function closeLightbox(e) {
+  if (e.target === document.getElementById('lightbox')) {
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+function closeLightboxBtn() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lightbox').classList.contains('open')) return;
+  if (e.key === 'ArrowRight') lightboxNav(1);
+  if (e.key === 'ArrowLeft') lightboxNav(-1);
+  if (e.key === 'Escape') closeLightboxBtn();
+});
+
+// Init
+initPortfolio();
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 40);
+});
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
